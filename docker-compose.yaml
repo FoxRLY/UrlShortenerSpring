@@ -8,16 +8,14 @@ services:
     environment:
       REDIS_PORT: ${REDIS_PORT}
   app:
-    container_name: "APP"
     restart: always
     build: .
     ports:
-      - "8080:8080"
+      - "8080-8084:8080"
     environment:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       URL_LENGTH: ${URL_LENGTH}
       REFILL: ${REFILL}
       CAPACITY: ${CAPACITY}
-      APP_CONTAINER_NAME: "APP"
 
