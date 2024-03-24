@@ -23,7 +23,11 @@ public class AppConfig {
     @Value("${spring.data.redis.port}")
     private Integer redisPort;
 
+    @Value("${short-url.request.refill}")
+    private Integer refillRate;
 
+    @Value("${short-url.request.capacity}")
+    private Integer tokenCapacity;
 
     @Bean
     public RedisClient redisClient(){
@@ -37,7 +41,7 @@ public class AppConfig {
                 .withExpirationStrategy(ExpirationAfterWriteStrategy.basedOnTimeForRefillingBucketUpToMax(Duration.ofSeconds(10)))
                 .build();
 
-        Bandwidth limit = Bandwidth.classic(20, Refill.greedy(20, Duration.ofMinutes(1)));
+        Bandwidth limit = Bandwidth.classic(tokenCapacity, Refill.greedy(tokenCapacity, Duration.ofSeconds(refillRate)));
         BucketConfiguration configuration = BucketConfiguration.builder()
                 .addLimit(limit)
                 .build();

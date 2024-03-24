@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +27,14 @@ public class MainController {
      * Перенаправляет на ресурс по идентификатору короткой ссылки
      * @param shortUrl Идентификатор короткой ссылки
      */
-    @SneakyThrows
+    @Operation(summary = "Перенаправить на ресурс по идентификатору короткой ссылки", description = "Перенаправляет на указанный короткой ссылкой ресурс")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "302", description = "Перенаправлен на ресурс по ссылке"),
+            @ApiResponse(responseCode = "404", description = "Ссылка не зарегистрирована или просрочена"),
+    })
     @GetMapping("/go-to/{shortUrl}")
     public ResponseEntity<String> redirect(@PathVariable String shortUrl) {
-        String destination = urlManager.retrieveUrl(shortUrl).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Eblan"));
+        String destination = urlManager.retrieveUrl(shortUrl).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "URL is not registered or expired"));
         return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).location(URI.create(destination)).body("");
     }
 
@@ -42,8 +45,9 @@ public class MainController {
      */
     @Operation(summary = "Создать новый идентификатор короткой ссылки", description = "Создает новый идентификатор короткой ссылки")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Запрос создан"),
-            @ApiResponse(responseCode = "403", description = "доступ запрещен")
+            @ApiResponse(responseCode = "200", description = "Ссылка создана успешно"),
+            @ApiResponse(responseCode = "400", description = "Полученная строка не является валидным URL"),
+            @ApiResponse(responseCode = "429", description = "Слишком много запросов")
     })
     @PostMapping("/create-url")
     public StringControllerResponse createShortUrl(@RequestBody UrlRequestBody fullUrl) {
@@ -60,6 +64,11 @@ public class MainController {
      * @param shortUrl Идентификатор короткой ссылки
      * @return Полная ссылка
      */
+    @Operation(summary = "Получить полную ссылку по идентификатору короткой ссылки", description = "Выдает сохраненную полную ссылку по идентификатору")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Ссылка найдена"),
+            @ApiResponse(responseCode = "404", description = "Ссылка не зарегистрирована или просрочена"),
+    })
     @GetMapping("/get-url/{shortUrl}")
     public StringControllerResponse retrieveFullUrl(@PathVariable String shortUrl){
         String result = urlManager.retrieveUrl(shortUrl).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "URL is not registered or expired"));

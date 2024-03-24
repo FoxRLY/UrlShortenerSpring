@@ -17,5 +17,7 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       URL_LENGTH: ${URL_LENGTH}
+      REFILL: ${REFILL}
+      CAPACITY: ${CAPACITY}
       APP_CONTAINER_NAME: "APP"
 
