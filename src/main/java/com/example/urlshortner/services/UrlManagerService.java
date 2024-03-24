@@ -9,11 +9,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
 
+/**
+ * Менеджер URL
+ * Создает новые короткие URL и выдает сохраненные полные URL
+ */
 @Service
 @RequiredArgsConstructor
 public class UrlManagerService {
     private final UrlShortenerService urlShortener;
     private final UrlRepository urlRepository;
+
     public Optional<String> createNewUrl(String full_url) {
         try {
             String short_url = urlShortener.createShortUrl(full_url);

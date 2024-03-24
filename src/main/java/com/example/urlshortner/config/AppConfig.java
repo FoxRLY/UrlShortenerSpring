@@ -23,6 +23,8 @@ public class AppConfig {
     @Value("${spring.data.redis.port}")
     private Integer redisPort;
 
+
+
     @Bean
     public RedisClient redisClient(){
         return RedisClient.create(new RedisURI(redisHost, redisPort, Duration.ofSeconds(10L)));
