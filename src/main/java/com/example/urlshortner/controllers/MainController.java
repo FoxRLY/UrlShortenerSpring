@@ -1,5 +1,6 @@
 package com.example.urlshortner.controllers;
 
+import com.example.urlshortner.dto.StringControllerResponse;
 import com.example.urlshortner.dto.UrlRequestBody;
 import com.example.urlshortner.services.UrlManagerService;
 import io.github.bucket4j.Bucket;
@@ -7,17 +8,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,20 +28,11 @@ public class MainController {
      * Перенаправить на ресурс по идентификатору короткой ссылки
      * @param shortUrl Идентификатор короткой ссылки
      */
+    @SneakyThrows
     @GetMapping("/go-to/{shortUrl}")
-    public ResponseEntity<String> redirect(@PathVariable String shortUrl){
-            Optional<String> result = urlManager.retrieveUrl(shortUrl);
-            if (result.isEmpty()){
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("URL is not registered or expired");
-            }
-            URI destination;
-            try {
-                log.info(result.get());
-                destination = new URL(result.get()).toURI();
-            } catch (URISyntaxException | MalformedURLException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Somehow malformed URL made it to the Database");
-            }
-            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).location( destination ).body("");
+    public ResponseEntity<String> redirect(@PathVariable String shortUrl) {
+        String destination = urlManager.retrieveUrl(shortUrl).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Eblan"));
+        return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT).location(URI.create(destination)).body("");
     }
 
     /**
@@ -57,13 +46,11 @@ public class MainController {
             @ApiResponse(responseCode = "403", description = "доступ запрещен")
     })
     @PostMapping("/create-url")
-    public String createShortUrl(@RequestBody UrlRequestBody fullUrl) {
+    public StringControllerResponse createShortUrl(@RequestBody UrlRequestBody fullUrl) {
         if(bucket.tryConsume(1)){
-            try {
-                return urlManager.createNewUrl(fullUrl.getUrl()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Something went wrong"));
-            } catch (MalformedURLException | URISyntaxException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provided string is not a valid URL");
-            }
+            String result =  urlManager.createNewUrl(fullUrl.getUrl()).orElseThrow(() ->
+                    new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provided string is not a valid URL"));
+            return new StringControllerResponse(result);
         }
         throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests");
     }
@@ -74,7 +61,8 @@ public class MainController {
      * @return Полная ссылка
      */
     @GetMapping("/get-url/{shortUrl}")
-    public String retrieveFullUrl(@PathVariable String shortUrl){
-        return urlManager.retrieveUrl(shortUrl).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "URL is not registered or expired"));
+    public StringControllerResponse retrieveFullUrl(@PathVariable String shortUrl){
+        String result = urlManager.retrieveUrl(shortUrl).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "URL is not registered or expired"));
+        return new StringControllerResponse(result);
     }
 }
